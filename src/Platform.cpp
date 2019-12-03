@@ -149,16 +149,17 @@ extern "C" void UrgentInit()
 	}
 #endif
 
-#if defined(DUET_M)
+#if defined(DUET_M) || defined(KINETICA_G2)
 	// The prototype boards don't have a pulldown on LCD_BEEP, which causes a hissing sound from the beeper on the 12864 display until the pin is initialised
 	pinMode(LcdBeepPin, OUTPUT_LOW);
 
 	// Set the 12864 display CS pin low to prevent it from receiving garbage due to other SPI traffic
 	pinMode(LcdCSPin, OUTPUT_LOW);
-
+#if !defined(KINETICA_G2)
 	// On the prototype boards the stepper driver expansion ports don't have external pullup resistors on their enable pins
 	pinMode(ENABLE_PINS[5], OUTPUT_HIGH);
 	pinMode(ENABLE_PINS[6], OUTPUT_HIGH);
+#endif // !KINETICA_G2
 #endif
 }
 
@@ -483,8 +484,10 @@ void Platform::Init()
 	}
 
 	DuetExpansion::AdditionalOutputInit();
-
-#elif defined(DUET_M)
+    
+#elif defined(KINETICA_G2) 
+	numSmartDrivers = MaxSmartDrivers;
+#elif defined(DUET_M) 
 	numSmartDrivers = MaxSmartDrivers;							// for now we assume that expansion drivers are smart too
 #elif defined(PCCB)
 	numSmartDrivers = MaxSmartDrivers;
@@ -1121,7 +1124,7 @@ void Platform::UpdateFirmware()
 		memcpy(reinterpret_cast<char*>(topOfStack), filename, sizeof(filename));
 	}
 
-#if defined(DUET_NG) || defined(DUET_M)
+#if defined(DUET_NG) || defined(DUET_M) || defined(KINETICA_G2)
 	IoPort::WriteDigital(DiagPin, false);			// turn the DIAG LED off
 #endif
 
@@ -1999,7 +2002,7 @@ void Platform::InitialiseInterrupts()
 	SERIAL_AUX2_DEVICE.setInterruptPriority(NvicPriorityPanelDueUart);
 #endif
 
-#if HAS_WIFI_NETWORKING
+#if HAS_WIFI_NETWORKING && !defined(KINETICA_G2)
 	NVIC_SetPriority(UART1_IRQn, NvicPriorityWiFiUart);			// set priority for WiFi UART interrupt
 #endif
 
@@ -2073,7 +2076,7 @@ void Platform::InitialiseInterrupts()
 # error
 #endif
 
-#if defined(DUET_NG) || defined(DUET_M) || defined(DUET_06_085)
+#if defined(DUET_NG) || defined(DUET_M) || defined(DUET_06_085) || defined(KINETICA_G2)
 	NVIC_SetPriority(I2C_IRQn, NvicPriorityTwi);
 #elif __LPC17xx__
 	NVIC_SetPriority(I2C0_IRQn, NvicPriorityTwi);
@@ -4091,6 +4094,20 @@ void Platform::SetBoardType(BoardType bt)
 		{
 			board = (vssaSenseWorking) ? BoardType::DuetEthernet_102 : BoardType::DuetEthernet_10;
 		}
+#elif defined(KINETICA_G2)
+        // Get ready to test whether the Ethernet module is present, so that we avoid additional delays
+		pinMode(EspResetPin, OUTPUT_LOW);						// reset the WiFi module or the W5500. We assume that this forces the ESP8266 UART output pin to high impedance.
+		pinMode(W5500ModuleSensePin, INPUT_PULLUP);				// set our UART receive pin to be an input pin and enable the pullup
+
+		// Test whether the Ethernet module is present
+		if (digitalRead(W5500ModuleSensePin))					// the Ethernet module has this pin grounded
+		{
+			board = digitalRead(BoardSelectorPin) ? BoardType::KineticaG2ProWifi_10  : BoardType::KineticaG2Wifi_10;
+		}
+		else
+		{
+			board = digitalRead(BoardSelectorPin) ? BoardType::KineticaG2ProEthernet_10  : BoardType::KineticaG2Ethernet_10 ;
+		}
 #elif defined(DUET_M)
 		board = BoardType::DuetM_10;
 #elif defined(DUET_06_085)
@@ -4144,6 +4161,11 @@ const char* Platform::GetElectronicsString() const
 	case BoardType::DuetWiFi_102:			return "Duet WiFi 1.02 or later";
 	case BoardType::DuetEthernet_10:		return "Duet Ethernet 1.0 or 1.01";
 	case BoardType::DuetEthernet_102:		return "Duet Ethernet 1.02 or later";
+#elif defined(KINETICA_G2)
+	case BoardType::KineticaG2Wifi_10 :			return "Kinetica G2 Wifi 1.0";
+	case BoardType::KineticaG2Ethernet_10 :			return "Kinetica G2 Ethernet 1.0";
+	case BoardType::KineticaG2ProWifi_10 :			return "Kinetica G2 Pro Wifi 1.0";
+	case BoardType::KineticaG2ProEthernet_10 :		return "Kinetica G2 Pro Ethernet 1.0";
 #elif defined(DUET_M)
 	case BoardType::DuetM_10:				return "Duet Maestro 1.0";
 #elif defined(DUET_06_085)
@@ -4183,6 +4205,11 @@ const char* Platform::GetBoardString() const
 	case BoardType::DuetWiFi_102:			return "duetwifi102";
 	case BoardType::DuetEthernet_10:		return "duetethernet10";
 	case BoardType::DuetEthernet_102:		return "duetethernet102";
+#elif defined(KINETICA_G2)
+	case BoardType::KineticaG2Wifi_10 :		return "kineticag2wifi10";
+	case BoardType::KineticaG2Ethernet_10  :	return "kineticag2ethernet10";
+	case BoardType::KineticaG2ProWifi_10 :		return "kineticag2prowifi10";
+	case BoardType::KineticaG2ProEthernet_10  :	return "kineticag2proethernet10";
 #elif defined(DUET_M)
 	case BoardType::DuetM_10:				return "duetmaestro100";
 #elif defined(DUET_06_085)
@@ -4206,11 +4233,15 @@ const char* Platform::GetBoardString() const
 	}
 }
 
-#ifdef DUET_NG
+#if defined(DUET_NG) || defined(KINETICA_G2)
 // Return true if this is a Duet WiFi, false if it is a Duet Ethernet
 bool Platform::IsDuetWiFi() const
 {
+#if defined(DUET_NG)
 	return board == BoardType::DuetWiFi_10 || board == BoardType::DuetWiFi_102;
+#else
+    return board == BoardType::KineticaG2Wifi_10  || board == BoardType::KineticaG2ProWifi_10 ;
+#endif 
 }
 #endif
 

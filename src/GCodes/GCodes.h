@@ -239,6 +239,7 @@ public:
 #if SUPPORT_WORKPLACE_COORDINATES
 	unsigned int GetWorkplaceCoordinateSystemNumber() const { return currentCoordinateSystem + 1; }
 #endif
+    bool SetInputActive(uint8_t input, bool active);
 
 protected:
 	DECLARE_OBJECT_MODEL

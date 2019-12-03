@@ -54,7 +54,7 @@ namespace FirmwareUpdater
 	void UpdateModule(unsigned int module)
 	{
 #if HAS_WIFI_NETWORKING
-# ifdef DUET_NG
+#if defined (DUET_NG) || defined (KINETICA_G2)
 		if (reprap.GetPlatform().IsDuetWiFi())
 		{
 # endif
@@ -74,7 +74,7 @@ namespace FirmwareUpdater
 				}
 				break;
 			}
-# ifdef DUET_NG
+#if defined (DUET_NG) || defined (KINETICA_G2)
 		}
 # endif
 #endif

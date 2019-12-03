@@ -193,6 +193,37 @@ void GCodes::Init()
 #endif
 }
 
+//to disable/enable GCode input 
+bool GCodes::SetInputActive(uint8_t input, bool active)
+{
+    static GCodeBuffer* gcodeSourcesBackup[9] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+    if ( input >= 9 )
+    {
+        return false;
+    }
+    if ((active && (gcodeSourcesBackup[input]  == nullptr)) || (!active && (gcodeSourcesBackup[input]  != nullptr)) || ((gcodeSources[input]  == nullptr) && (gcodeSourcesBackup[input]  == nullptr)) )
+    {
+        return false;
+    }
+    switch (input)
+    {
+    case 6: //auxGCode
+        if (active)
+        {
+            gcodeSourcesBackup[input] = gcodeSources[input];
+            gcodeSources[input] = nullptr;
+        } 
+        else 
+        {
+            gcodeSources[input] = gcodeSourcesBackup[input];
+            gcodeSourcesBackup[input] = nullptr;
+        }
+        return true;
+    default:
+        return false;
+    }
+}
+
 // This is called from Init and when doing an emergency stop
 void GCodes::Reset()
 {

@@ -115,6 +115,11 @@ enum class BoardType : uint8_t
 	DuetWiFi_102 = 2,
 	DuetEthernet_10 = 3,
 	DuetEthernet_102 = 4
+#elif defined(KINETICA_G2)
+	KineticaG2Wifi_10 = 1,
+	KineticaG2Ethernet_10 = 2,
+	KineticaG2ProWifi_10 = 3,
+	KineticaG2ProEthernet_10 = 4
 #elif defined(DUET_M)
 	DuetM_10 = 1,
 #elif defined(DUET_06_085)
@@ -331,7 +336,7 @@ public:
 	const char* GetElectronicsString() const;
 	const char* GetBoardString() const;
 
-#ifdef DUET_NG
+#if defined(DUET_NG) || defined(KINETICA_G2)
 	bool IsDuetWiFi() const;
 #endif
 
@@ -1203,7 +1208,7 @@ inline OutputBuffer *Platform::GetAuxGCodeReply()
 	const PinDescription& pinDesc = g_APinDescription[STEP_PINS[driver]];
 #endif
 
-#if defined(DUET_NG) || defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
+#if defined(KINETICA_G2) || defined(DUET_NG) || defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
 	return pinDesc.ulPin;
 #elif defined(DUET_06_085)
 	return (pinDesc.pPort == PIOA) ? pinDesc.ulPin << 1 : pinDesc.ulPin;
@@ -1225,7 +1230,7 @@ inline OutputBuffer *Platform::GetAuxGCodeReply()
 {
 #if defined(DUET_NG)
 	PIOD->PIO_ODSR = driverMap;				// on Duet WiFi all step pins are on port D
-#elif defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
+#elif defined(KINETICA_G2) || defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
 	PIOC->PIO_ODSR = driverMap;				// on Duet Maestro all step pins are on port C
 #elif defined(DUET_06_085)
 	PIOD->PIO_ODSR = driverMap;
@@ -1257,7 +1262,7 @@ inline OutputBuffer *Platform::GetAuxGCodeReply()
 {
 #if defined(DUET_NG)
 	PIOD->PIO_ODSR = 0;						// on Duet WiFi all step pins are on port D
-#elif defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
+#elif defined(KINETICA_G2) || defined(DUET_M) || defined(PCCB) || defined(DUET3_V03) || defined(DUET3_V05) || defined(SAME70XPLD)
 	PIOC->PIO_ODSR = 0;						// on Duet Maestro, Duet 3 and PCCB all step pins are on port C
 #elif defined(DUET_06_085)
 	PIOD->PIO_ODSR = 0;

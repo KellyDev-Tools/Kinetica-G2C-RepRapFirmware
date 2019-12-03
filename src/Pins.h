@@ -28,6 +28,8 @@
 #  define PLATFORM DuetM
 # elif defined(PCCB)
 #  define PLATFORM Pccb
+#elif defined(KINETICA_G2)
+#  define PLATFORM KineticaG2
 # else
 #  error Unknown platform
 # endif

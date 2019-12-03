@@ -16,6 +16,9 @@
 #include "WifiFirmwareUploader.h"
 #include "General/IP4String.h"
 #include "WiFiSocket.h"
+#if defined(KINETICA_G2)
+#include "GCodes/GCodes.h"
+#endif
 
 static_assert(SsidLength == SsidBufferLength, "SSID lengths in NetworkDefs.h and MessageFormats.h don't match");
 
@@ -33,6 +36,12 @@ static_assert(SsidLength == SsidBufferLength, "SSID lengths in NetworkDefs.h and
 # define USE_PDC			0		// use peripheral DMA controller
 # define USE_DMAC			0		// use general DMA controller
 # define USE_XDMAC			1		// use XDMA controller
+
+#elif defined(KINETICA_G2)
+
+# define USE_PDC			1		// use peripheral DMA controller
+# define USE_DMAC			0		// use general DMA controller
+# define USE_XDMAC			0		// use XDMA controller
 
 #else
 # error Unknown board
@@ -402,7 +411,7 @@ void WiFiInterface::Start()
 	// Make sure the ESP8266 is in the reset state
 	pinMode(EspResetPin, OUTPUT_LOW);
 
-#ifdef DUET_NG
+#if defined(DUET_NG) || defined(KINETICA_G2)
 	// Take the ESP8266 out of power down
 	pinMode(EspEnablePin, OUTPUT_HIGH);
 #endif
@@ -673,7 +682,7 @@ void WiFiInterface::Spin(bool full)
 	default:
 		break;
 	}
-
+#if !defined(KINETICA_G2)
 	// Check for debug info received from the WiFi module
 	if (serialRunning)
 	{
@@ -694,7 +703,7 @@ void WiFiInterface::Spin(bool full)
 			}
 		}
 	}
-
+#endif //!defined(KINETICA_G2) 
 	if (full)
 	{
 		// Check for debug info received from the WiFi module
@@ -1790,7 +1799,14 @@ void WiFiInterface::StartWiFi()
 {
 	digitalWrite(EspResetPin, HIGH);
 	ConfigurePin(g_APinDescription[APINS_Serial1]);				// connect the pins to UART1
+#if defined(KINETICA_G2)
+    //Restore AUX baudrate
+	SERIAL_WIFI_DEVICE.begin(platform.GetBaudRate(1));
+    //Enable AUX if disabled
+    reprap.GetGCodes().SetInputActive(6,true);
+#else
 	Serial1.begin(WiFiBaudRate);								// initialise the UART, to receive debug info
+#endif
 	debugMessageChars = 0;
 	serialRunning = true;
 	debugPrintPending = false;
@@ -1800,13 +1816,19 @@ void WiFiInterface::StartWiFi()
 void WiFiInterface::ResetWiFi()
 {
 	pinMode(EspResetPin, OUTPUT_LOW);							// assert ESP8266 /RESET
+#if !defined(KINETICA_G2)
 	pinMode(APIN_Serial1_TXD, INPUT_PULLUP);						// just enable pullups on TxD and RxD pins for now to avoid floating pins
 	pinMode(APIN_Serial1_RXD, INPUT_PULLUP);
+#endif
 	currentMode = WiFiState::disabled;
 
 	if (serialRunning)
 	{
-		Serial1.end();
+#if defined(KINETICA_G2)
+		//Disable AUX
+		reprap.GetGCodes().SetInputActive(6,false);
+#endif
+		SERIAL_WIFI_DEVICE.end();
 		serialRunning = false;
 	}
 }
@@ -1821,14 +1843,17 @@ void WiFiInterface::ResetWiFiForUpload(bool external)
 {
 	if (serialRunning)
 	{
-		Serial1.end();
+		SERIAL_WIFI_DEVICE.end();
 		serialRunning = false;
 	}
-
+#if defined(KINETICA_G2)
+    //Disable AUX
+    reprap.GetGCodes().SetInputActive(6,false);
+#endif
 	// Make sure the ESP8266 is in the reset state
 	pinMode(EspResetPin, OUTPUT_LOW);
 
-#ifdef DUET_NG
+#if defined(DUET_NG) || defined(KINETICA_G2)
 	// Take the ESP8266 out of power down
 	pinMode(EspEnablePin, OUTPUT_HIGH);
 #endif

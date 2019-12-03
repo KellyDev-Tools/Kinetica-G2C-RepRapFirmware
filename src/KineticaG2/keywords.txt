@@ -1,0 +1,9 @@
+Kinetica_G2
+KINETICA_G2
+
+kineticag210
+
+KineticaG2Wifi_10 = 1,
+KineticaG2Ethernet_10 = 2,
+KineticaG2ProWifi_10 = 3,
+KineticaG2ProEthernet_10 = 4

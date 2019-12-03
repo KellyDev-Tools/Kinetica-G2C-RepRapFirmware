@@ -1585,12 +1585,12 @@ OutputBuffer *RepRap::GetConfigResponse()
 
 #if HAS_WIFI_NETWORKING
 	// If we have WiFi networking, send the WiFi module firmware version
-# ifdef DUET_NG
+# if defined(DUET_NG) || defined(KINETICA_G2)
 	if (platform->IsDuetWiFi())
 	{
 # endif
 		response->catf(",\"dwsVersion\":\"%s\"", network->GetWiFiServerVersion());
-# ifdef DUET_NG
+# if defined(DUET_NG) || defined(KINETICA_G2)
 	}
 # endif
 #endif

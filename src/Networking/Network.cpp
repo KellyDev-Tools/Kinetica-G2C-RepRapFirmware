@@ -60,6 +60,8 @@ Network::Network(Platform& p) : platform(p), responders(nullptr), nextResponderT
 	interfaces[0] = nullptr;			// we set this up in Init()
 #elif defined(DUET_M)
 	interfaces[0] = new W5500Interface(p);
+#elif defined(KINETICA_G2)
+	interfaces[0] = nullptr;			// we set this up in Init()
 #elif defined(__LPC17xx__)
 	interfaces[0] = new RTOSPlusTCPEthernetInterface(p);
 #else
@@ -99,7 +101,7 @@ void Network::Init()
 	telnetMutex.Create("Telnet");
 #endif
 
-#if defined(DUET_NG)
+#if defined(DUET_NG) || defined(KINETICA_G2)
 	interfaces[0] = (platform.IsDuetWiFi()) ? static_cast<NetworkInterface*>(new WiFiInterface(platform)) : static_cast<NetworkInterface*>(new W5500Interface(platform));
 #endif
 
