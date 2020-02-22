@@ -702,12 +702,17 @@ void TmcDriverState::SetCurrent(float current)
 
 void TmcDriverState::UpdateCurrent()
 {
+#if defined(KINETICA_G2)
+#define MAX_CURRENT 2535 
+#else
+#define MAX_CURRENT 1615
+#endif
 	// The current sense resistor on the Duet M is 0.082 ohms, to which we must add 0.03 ohms internal resistance.
 	// Full scale peak motor current in the high sensitivity range is give by I = 0.18/(R+0.03) = 0.18/0.105 ~= 1.6A
 	// This gives us a range of 50mA to 1.6A in 50mA steps in the high sensitivity range (VSENSE = 1)
-	const uint32_t iRunCsBits = (32 * motorCurrent - 800)/1615;		// formula checked by simulation on a spreadsheet
+	const uint32_t iRunCsBits = (32 * motorCurrent - 800)/MAX_CURRENT;		// formula checked by simulation on a spreadsheet
 	const uint32_t iHoldCurrent = (motorCurrent * standstillCurrentFraction)/256;	// set standstill current
-	const uint32_t iHoldCsBits = (32 * iHoldCurrent - 800)/1615;	// formula checked by simulation on a spreadsheet
+	const uint32_t iHoldCsBits = (32 * iHoldCurrent - 800)/MAX_CURRENT;	// formula checked by simulation on a spreadsheet
 	UpdateRegister(WriteIholdIrun,
 					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRunCsBits << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
 }
