@@ -4,6 +4,7 @@
 
 # Misc
 /.settings/language.settings.xml
+.vscode
 
 # Output folders
 /Duet2/
